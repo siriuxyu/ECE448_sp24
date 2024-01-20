@@ -10,5 +10,13 @@ def estimate_geometric(PX):
     PY (numpy array of length cX): PY[x] = P(Y=y), the first cX values of the pmf of a
       geometric random variable such that E[Y]=E[X].
     '''
-    raise RuntimeError("You need to write this")
+    # raise RuntimeError("You need to write this")
+    mean = 0
+    for i in range(len(PX)):
+        mean += i * PX[i]
+    p = 1 / (mean + 1)
+    
+    PY = np.zeros(len(PX))
+    for i in range(len(PX)):
+        PY[i] = (1 - p) ** i * p
     return p, PY

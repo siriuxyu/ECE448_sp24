@@ -58,28 +58,38 @@ def conditional_distribution_of_word_counts(texts, word0, word1):
     word_count_1 = list(range(len(texts)))
     num_count_0 = np.zeros(len(word_count_0))
     num_count_1 = np.zeros(len(word_count_1))
+    Pcond_raw = np.zeros((len(word_count_0), len(word_count_1)))
+    # computer Pcond_raw, the num of events that X0=x0 and X1=x1
     for i in range(len(texts)):
         word_count_0[i] = texts[i].count(word0)
         word_count_1[i] = texts[i].count(word1)
-    for i in range(len(texts)):
-        num_count_0[i] = word_count_0.count(i)
-        num_count_1[i] = word_count_1.count(i)
-    for i in range(len(num_count_0)):
-        if all(x == 0 for x in num_count_0[i:]):
-            num_count_0 = num_count_0[:i]
-            break
-    for i in range(len(num_count_1)):
-        if all(x == 0 for x in num_count_1[i:]):
-            num_count_1 = num_count_1[:i]
-            break
-    Pcond = np.zeros((len(num_count_0), len(num_count_1)))
-    for i in range(len(num_count_0)):
-        for j in range(len(num_count_1)):
-            if num_count_0[i] == 0:
-                Pcond[i][j] = np.nan
+        Pcond_raw[word_count_0[i]][word_count_1[i]] += 1
+    
+    # filter out the 0s
+    row_max = 0
+    for i in range(len(word_count_0)):
+        if ~((Pcond_raw[i,:] == 0).all()):
+            if i > row_max:
+                row_max = i
+    Pcond_raw = Pcond_raw[:row_max+1,:]
+    
+    col_max = 0
+    for i in range(Pcond_raw.shape[0]):
+        for j in range(Pcond_raw.shape[1]):
+            if Pcond_raw[i][j] != 0:
+                if j > col_max:
+                    col_max = j
+    Pcond_raw = Pcond_raw[:,:col_max+1]
+        
+    Pcond = np.zeros((Pcond_raw.shape[0], Pcond_raw.shape[1]))
+    for i_0 in range(Pcond_raw.shape[0]):
+        row_sum = sum(Pcond_raw[i_0])
+        for i_1 in range(Pcond_raw.shape[1]):
+            if row_sum != 0:
+                Pcond[i_0][i_1] = Pcond_raw[i_0][i_1]/sum(Pcond_raw[i_0])
             else:
-                Pcond[i][j] = num_count_1[j]/num_count_0[i]
-
+                Pcond[i_0][i_1] = np.nan
+            
     # raise RuntimeError("You need to write this part!")
     return Pcond
 
@@ -113,7 +123,12 @@ def mean_vector(Pjoint):
     Outputs:
     mu (numpy array, length 2) - the mean of the vector [X0, X1]
     '''
-    raise RuntimeError("You need to write this part!")
+    mu = np.zeros(2)
+    for i in range(Pjoint.shape[0]):
+        for j in range(Pjoint.shape[1]):
+            mu[0] += i * Pjoint[i][j]
+            mu[1] += j * Pjoint[i][j]
+    # raise RuntimeError("You need to write this part!")
     return mu
 
 def covariance_matrix(Pjoint, mu):
@@ -125,7 +140,15 @@ def covariance_matrix(Pjoint, mu):
     Outputs:
     Sigma (numpy array, shape=(2,2)) - matrix of variance and covariances of [X0,X1]
     '''
-    raise RuntimeError("You need to write this part!")
+    Sigma = np.zeros((2,2))
+    for i in range(Pjoint.shape[0]):
+        for j in range(Pjoint.shape[1]):
+            Sigma[0][0] += (i - mu[0])**2 * Pjoint[i][j]
+            Sigma[0][1] += (i - mu[0]) * (j - mu[1]) * Pjoint[i][j]
+            Sigma[1][0] = Sigma[0][1]
+            Sigma[1][1] += (j - mu[1])**2 * Pjoint[i][j]
+    
+    # raise RuntimeError("You need to write this part!")
     return Sigma
 
 def distribution_of_a_function(Pjoint, f):
@@ -142,6 +165,12 @@ def distribution_of_a_function(Pjoint, f):
        so that previously unobserved values of z have a default setting
        of Pfunc[z]=0.
     '''
-    raise RuntimeError("You need to write this part!")
+    Pfunc = Counter()
+    for i in range(Pjoint.shape[0]):
+        for j in range(Pjoint.shape[1]):
+            z = f(i, j)
+            Pfunc[z] += Pjoint[i][j]
+    
+    # raise RuntimeError("You need to write this part!")
     return Pfunc
     
