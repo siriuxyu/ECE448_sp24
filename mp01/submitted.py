@@ -20,7 +20,22 @@ def marginal_distribution_of_word_counts(texts, word0):
       X0 is the number of times that word0 occurs in a document
       cX0-1 is the largest value of X0 observed in the provided texts
     '''
-    raise RuntimeError("You need to write this part!")
+    # Pmarginal = np.zeros(1)
+    counts = list(range(len(texts)))
+    num_count = list(range(len(counts)))
+    for i in range(len(texts)):
+        counts[i] = texts[i].count(word0)
+    for i in range(len(counts)):
+        num_count[i] = counts.count(i)
+
+    for i in range(len(num_count)):
+        if all(x == 0 for x in num_count[i:]):
+            num_count = num_count[:i]
+            break
+    # sorted_num_count = sorted(filtered_num_count)
+    Pmarginal = np.array(num_count)/sum(num_count)
+    
+    # raise RuntimeError("You need to write this part!")
     return Pmarginal
     
 def conditional_distribution_of_word_counts(texts, word0, word1):
@@ -38,7 +53,34 @@ def conditional_distribution_of_word_counts(texts, word0, word1):
       cX1-1 is the largest value of X0 observed in the provided texts
       CAUTION: If P(X0=x0) is zero, then P(X1=x1|X0=x0) should be np.nan.
     '''
-    raise RuntimeError("You need to write this part!")
+    
+    word_count_0 = list(range(len(texts)))
+    word_count_1 = list(range(len(texts)))
+    num_count_0 = np.zeros(len(word_count_0))
+    num_count_1 = np.zeros(len(word_count_1))
+    for i in range(len(texts)):
+        word_count_0[i] = texts[i].count(word0)
+        word_count_1[i] = texts[i].count(word1)
+    for i in range(len(texts)):
+        num_count_0[i] = word_count_0.count(i)
+        num_count_1[i] = word_count_1.count(i)
+    for i in range(len(num_count_0)):
+        if all(x == 0 for x in num_count_0[i:]):
+            num_count_0 = num_count_0[:i]
+            break
+    for i in range(len(num_count_1)):
+        if all(x == 0 for x in num_count_1[i:]):
+            num_count_1 = num_count_1[:i]
+            break
+    Pcond = np.zeros((len(num_count_0), len(num_count_1)))
+    for i in range(len(num_count_0)):
+        for j in range(len(num_count_1)):
+            if num_count_0[i] == 0:
+                Pcond[i][j] = np.nan
+            else:
+                Pcond[i][j] = num_count_1[j]/num_count_0[i]
+
+    # raise RuntimeError("You need to write this part!")
     return Pcond
 
 def joint_distribution_of_word_counts(Pmarginal, Pcond):
@@ -53,7 +95,14 @@ def joint_distribution_of_word_counts(Pmarginal, Pcond):
       X1 is the number of times that word1 occurs in the same text.
       CAUTION: if P(X0=x0) then P(X0=x0,X1=x1)=0, even if P(X1=x1|X0=x0)=np.nan.
     '''
-    raise RuntimeError("You need to write this part!")
+    Pjoint = np.zeros((Pcond.shape[0], Pcond.shape[1]))
+    for i in range(Pcond.shape[0]):
+        for j in range(Pcond.shape[1]):
+            if Pmarginal[i] == 0:
+                Pjoint[i][j] = 0
+            else:
+                Pjoint[i][j] = Pmarginal[i] * Pcond[i][j]  
+    # raise RuntimeError("You need to write this part!")
     return Pjoint
 
 def mean_vector(Pjoint):
