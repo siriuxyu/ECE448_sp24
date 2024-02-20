@@ -39,12 +39,11 @@ class NeuralNet(torch.nn.Module):
         """
         super().__init__()
         ################# Your Code Starts Here #################
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)  # 第一个卷积层
-        self.pool = nn.MaxPool2d(2, 2)  # 池化层
-        # 添加更多的卷积层和全连接层...
-        self.ln1 = nn.Linear(16 * 15 * 15, 5)  # 根据前一层的输出特征图尺寸调整
-        # self.ln2 = nn.Linear(120, 5)  # 假设最终输出为5个类别‘’
-        self.relu = nn.ReLU()
+        self.layers = nn.Sequential(
+            nn.Linear(2883, 31),
+            nn.ReLU(),
+            nn.Linear(31, 5)
+        )
         
         self.loss = nn.CrossEntropyLoss()
         
@@ -62,13 +61,8 @@ class NeuralNet(torch.nn.Module):
             y:      an (N, output_size) tensor of output from the network
         """
         ################# Your Code Starts Here #################
-        x_temp = x.view(-1, 3, 31, 31)
-        x_temp = self.conv1(x_temp)
-        x_temp = self.pool(x_temp)
-        x_temp = self.relu(x_temp)
-        x_temp = x_temp.view(-1, 16 * 15 * 15)
+        y_pred = self.layers(x)
         
-        y_pred = self.relu(self.ln1(x_temp))
         return y_pred
         ################## Your Code Ends here ##################
 
