@@ -39,11 +39,9 @@ class NeuralNet(torch.nn.Module):
         """
         super().__init__()
         ################# Your Code Starts Here #################
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)  # 第一个卷积层
-        self.pool = nn.MaxPool2d(2, 2)  # 池化层
-        # 添加更多的卷积层和全连接层...
-        self.ln1 = nn.Linear(16 * 15 * 15, 5)  # 根据前一层的输出特征图尺寸调整
-        # self.ln2 = nn.Linear(120, 5)  # 假设最终输出为5个类别‘’
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1) # conv layer
+        self.pool = nn.MaxPool2d(2, 2)                          # pooling layer
+        self.ln1 = nn.Linear(16 * 15 * 15, 5)
         self.relu = nn.ReLU()
         
         self.loss = nn.CrossEntropyLoss()
