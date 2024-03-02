@@ -27,8 +27,53 @@ def bfs(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     #TODO: Implement bfs function
-
-    return []
+    import queue
+    path = []
+    last_points = []
+    visited = []
+    dist_from_start = []
+    infi = maze.size.x * maze.size.y + 1
+    for i in range(maze.size.y):
+        temp_last = []
+        temp_visited = []
+        temp_dist = []
+        for j in range(maze.size.x):
+            temp_last.append((-1,-1))
+            temp_visited.append(False)
+            temp_dist.append(infi)
+        last_points.append(temp_last)
+        visited.append(temp_visited)
+        dist_from_start.append(temp_dist)
+    dist_from_start[maze.start[0]][maze.start[1]] = 0
+    
+    my_queue = queue.Queue()
+    temp_point = maze.start
+    target_point = ()
+    for i in maze.waypoints:
+        target_point = i
+        while temp_point != target_point:
+            temp_neighbors = maze.neighbors_all(temp_point[0], temp_point[1])
+            for i in range(len(temp_neighbors)):
+                dist_origin = dist_from_start[temp_neighbors[i][0]][temp_neighbors[i][1]]
+                dist_new = dist_from_start[temp_point[0]][temp_point[1]] + 1
+                if visited[temp_neighbors[i][0]][temp_neighbors[i][1]] == True:
+                    continue
+                if dist_new < dist_origin:
+                    dist_from_start[temp_neighbors[i][0]][temp_neighbors[i][1]] = dist_new
+                    last_points[temp_neighbors[i][0]][temp_neighbors[i][1]] = temp_point
+                if temp_neighbors[i] not in my_queue.queue:
+                    my_queue.put(temp_neighbors[i])
+            next_point = my_queue.get()
+            visited[next_point[0]][next_point[1]] = True
+            temp_point = next_point
+    
+    temp_path = maze.waypoints[-1]
+    while temp_path != maze.start:
+        path.append(temp_path)
+        temp_path = last_points[temp_path[0]][temp_path[1]]
+    path.append(maze.start)
+    path.reverse()
+    return path
 
 def astar_single(maze):
     """
@@ -39,8 +84,56 @@ def astar_single(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     #TODO: Implement astar_single
-
-    return []
+    import queue
+    path = []
+    last_points = []
+    visited = []
+    dist_from_start = []
+    infi = maze.size.x * maze.size.y + 1
+    for i in range(maze.size.y):
+        temp_last = []
+        temp_visited = []
+        temp_dist = []
+        for j in range(maze.size.x):
+            temp_last.append((-1,-1))
+            temp_visited.append(False)
+            temp_dist.append(infi)
+        last_points.append(temp_last)
+        visited.append(temp_visited)
+        dist_from_start.append(temp_dist)
+    dist_from_start[maze.start[0]][maze.start[1]] = 0
+    
+    temp_point = maze.start
+    priority_queue = queue.PriorityQueue()
+    target_point = ()
+    for i in maze.waypoints:
+        target_point = i
+        while temp_point != target_point:
+            temp_neighbors = maze.neighbors_all(temp_point[0], temp_point[1])
+            for i in range(len(temp_neighbors)):
+                dist_origin = dist_from_start[temp_neighbors[i][0]][temp_neighbors[i][1]]
+                dist_new = dist_from_start[temp_point[0]][temp_point[1]] + 1
+                if visited[temp_neighbors[i][0]][temp_neighbors[i][1]] == True:
+                    continue
+                if dist_new < dist_origin:
+                    dist_from_start[temp_neighbors[i][0]][temp_neighbors[i][1]] = dist_new
+                    last_points[temp_neighbors[i][0]][temp_neighbors[i][1]] = temp_point
+                temp_tuple = (dist_from_start[temp_neighbors[i][0]][temp_neighbors[i][1]] + 
+                              abs(temp_neighbors[i][0] - target_point[0]) + abs(temp_neighbors[i][1] - target_point[1]),
+                              temp_neighbors[i])
+                if temp_tuple not in priority_queue.queue:
+                    priority_queue.put(temp_tuple)
+            next_point = priority_queue.get()
+            visited[next_point[1][0]][next_point[1][1]] = True
+            temp_point = next_point[1]
+    
+    temp_path = maze.waypoints[-1]
+    while temp_path != maze.start:
+        path.append(temp_path)
+        temp_path = last_points[temp_path[0]][temp_path[1]]
+    path.append(maze.start)
+    path.reverse()
+    return path
 
 # This function is for Extra Credits, please begin this part after finishing previous two functions
 def astar_multiple(maze):
