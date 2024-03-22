@@ -56,7 +56,26 @@ def minimax(board, side, flags, depth):
       flags (list of flags): list of flags, used by generateMoves and makeMove
       depth (int >=0): depth of the search (number of moves)
     '''
-    raise NotImplementedError("you need to write this!")
+    if depth == 0:
+        return ([], {}, evaluate(board))
+    moves = [ move for move in generateMoves(board, side, flags) ]
+    if len(moves) > 0:
+        moveTree = {}
+        b_move = None
+        b_next_move = []
+        b_value = -math.inf if side == False else math.inf
+        for move in moves:
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            next_move, next_tree, value = minimax(newboard, newside, newflags, depth-1)
+            moveTree[encode(*move)] = next_tree
+            if (not side and value > b_value) or (side and value < b_value):
+                b_move = move
+                b_value = value
+                b_next_move = next_move
+        return ([ b_move ] + b_next_move, moveTree, b_value)
+    else:
+        return ([], {}, evaluate(board))
+    # raise NotImplementedError("you need to write this!")
 
 def alphabeta(board, side, flags, depth, alpha=-math.inf, beta=math.inf):
     '''
@@ -71,7 +90,37 @@ def alphabeta(board, side, flags, depth, alpha=-math.inf, beta=math.inf):
       flags (list of flags): list of flags, used by generateMoves and makeMove
       depth (int >=0): depth of the search (number of moves)
     '''
-    raise NotImplementedError("you need to write this!")
+    if depth == 0:
+        return ([], {}, evaluate(board))
+    moves = [ move for move in generateMoves(board, side, flags) ]
+    if len(moves) > 0:
+        moveTree = {}
+        b_move = None
+        b_next_move = []
+        b_value = -math.inf if side == False else math.inf
+        for move in moves:
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            next_move, next_tree, value = alphabeta(newboard, newside, newflags, depth-1, alpha, beta)
+            moveTree[encode(*move)] = next_tree
+            if side == False:
+                if value > b_value:
+                    b_move = move
+                    b_value = value
+                    b_next_move = next_move
+                alpha = max(alpha, value)
+            else:
+                if value < b_value:
+                    b_move = move
+                    b_value = value
+                    b_next_move = next_move
+                beta = min(beta, value)
+            if alpha >= beta:
+                break
+        return ([ b_move ] + b_next_move, moveTree, b_value)
+    else:
+        return ([], {}, evaluate(board))
+      
+    # raise NotImplementedError("you need to write this!")
     
 
 def stochastic(board, side, flags, depth, breadth, chooser):
@@ -89,4 +138,26 @@ def stochastic(board, side, flags, depth, breadth, chooser):
       breadth: number of different paths 
       chooser: a function similar to random.choice, but during autograding, might not be random.
     '''
-    raise NotImplementedError("you need to write this!")
+    if depth == 0:
+        return ([], {}, evaluate(board))
+    moves = [ move for move in generateMoves(board, side, flags) ]
+    if len(moves) > 0:
+        moveTree = {}
+        b_move = None
+        b_next_move = []
+        b_value = -math.inf if side==False else math.inf
+        for move in moves:
+            values = []
+            for _ in range(breadth):
+                newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+                next_move, next_tree, value = stochastic(newboard, newside, newflags, depth-1, breadth, chooser)
+                values.append(value)
+            moveTree[encode(*move)] = next_tree
+            if (not side and sum(values)/len(values) > b_value) or (side and sum(values)/len(values) < b_value):
+                b_move = move
+                b_next_move = next_move
+                b_value = sum(values)/len(values)
+        return ([ b_move ] + b_next_move, moveTree, b_value)
+    else:
+        return ([], {}, evaluate(board))
+    # raise NotImplementedError("you need to write this!")
