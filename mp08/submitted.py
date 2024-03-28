@@ -44,7 +44,11 @@ def utility_partials(R, x):
 
     HINT: You may find the functions sig2 and dsig2 to be useful.
     '''
-    raise RuntimeError("You need to write this!")
+    partial = np.zeros(2)
+    partial[0] = dsig2(sig2(x[0])) @ R[0,:,:] @ sig2(x[1])      # partial derivative of u[0] with respect to x[0]
+    partial[1] = sig2(x[0]) @ R[1,:,:] @ dsig2(sig2(x[1]))      # partial derivative of u[1] with respect to x[1]
+    
+    # raise RuntimeError("You need to write this!")
     return partial
 
 def episodic_game_gradient_ascent(init, rewards, nsteps, learningrate):
@@ -69,7 +73,15 @@ def episodic_game_gradient_ascent(init, rewards, nsteps, learningrate):
     The utility (expected reward) for player i is sig2(logits[t,0])@rewards[i,:,:]@sig2(logits[t,1]),
     and the next logits are logits[t+1,i] = logits[t,i] + learningrate * utility_partials(rewards, logits[t,:]).
     '''
-    raise RuntimeError("You need to write this!")            
+    logits = np.zeros((nsteps,2))
+    utilities = np.zeros((nsteps,2))
+    logits[0,:] = init
+    for t in range(nsteps-1):
+        logits[t+1,:] = logits[t,:] + learningrate * utility_partials(rewards, logits[t,:])
+        utilities[t,:] = sig2(logits[t,0]) @ rewards[0,:,:] @ sig2(logits[t,1]), sig2(logits[t,0]) @ rewards[1,:,:] @ sig2(logits[t,1])
+    utilities[nsteps-1,:] = sig2(logits[nsteps-1,0]) @ rewards[0,:,:] @ sig2(logits[nsteps-1,1]), sig2(logits[nsteps-1,0]) @ rewards[1,:,:] @ sig2(logits[nsteps-1,1])
+    
+    # raise RuntimeError("You need to write this!")            
     return logits, utilities
     
 def utility_hessian(R, x):
@@ -87,7 +99,13 @@ def utility_hessian(R, x):
 
     HINT: You may find the functions sig2, dsig2, and Hsig2 to be useful.
     '''
-    raise RuntimeError("You need to write this!")            
+    # raise RuntimeError("You need to write this!")   
+    hessian = np.zeros((2,2))
+    hessian[0,0] = Hsig2(sig2(x[0])) @ R[0,:,:] @ sig2(x[1])      # second partial derivative of u[0] with respect to x[0] and x[0]
+    hessian[0,1] = dsig2(sig2(x[0])) @ R[0,:,:] @ dsig2(sig2(x[1]))      # second partial derivative of u[0] with respect to x[0] and x[1]
+    hessian[1,0] = dsig2(sig2(x[0])) @ R[1,:,:] @ dsig2(sig2(x[1]))      # second partial derivative of u[1] with respect to x[1] and x[0]
+    hessian[1,1] = sig2(x[0]) @ R[1,:,:] @ Hsig2(sig2(x[1]))      # second partial derivative of u[1] with respect to x[1] and x[1]
+             
     return hessian
     
 def episodic_game_corrected_ascent(init, rewards, nsteps, learningrate):
@@ -115,7 +133,18 @@ def episodic_game_corrected_ascent(init, rewards, nsteps, learningrate):
     and if t+1 is less than nsteps, the logits are updated as
     logits[t+1,i] = logits[t,i] + learningrate * (I + symplectic_correction(partials, hessian))@partials
     '''
-    raise RuntimeError("You need to write this!")            
+    # raise RuntimeError("You need to write this!")     
+    
+    logits = np.zeros((nsteps,2))
+    utilities = np.zeros((nsteps,2))
+    logits[0,:] = init
+    for t in range(nsteps-1):
+        partials = utility_partials(rewards, logits[t,:])
+        hessian = utility_hessian(rewards, logits[t,:])
+        logits[t+1,:] = logits[t,:] + learningrate * (np.eye(2) + symplectic_correction(partials, hessian)) @ partials
+        utilities[t,:] = sig2(logits[t,0]) @ rewards[0,:,:] @ sig2(logits[t,1]), sig2(logits[t,0]) @ rewards[1,:,:] @ sig2(logits[t,1])
+    utilities[nsteps-1,:] = sig2(logits[nsteps-1,0]) @ rewards[0,:,:] @ sig2(logits[nsteps-1,1]), sig2(logits[nsteps-1,0]) @ rewards[1,:,:] @ sig2(logits[nsteps-1,1])
+           
     return logits, utilities
 
 
@@ -134,6 +163,7 @@ Examples:
 * If you want to repeat your last move with probability 0.8, and the other player's last move 
 with probability 0.2, return [[0.0, 0.8],[0.2, 1.0]].
 '''
-sequential_strategy = 0.5*np.ones((2,2)) # Default: always play uniformly at random
+sequential_strategy = np.array([[0.0, 0.5],
+                                [0.5, 1.0]])
 
 
