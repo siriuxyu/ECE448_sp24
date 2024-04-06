@@ -76,13 +76,22 @@ class MultiHeadAttention(nn.Module):
         min_val = torch.finfo(query.dtype).min
         ##### YOUR CODE STARTS HERE #####
         ## Use min_val defined above if you want to fill in certain parts of a tensor with the mininum value of a specific data type; use the torch.Tensor.masked_fill function in PyTorch to fill in a bool type mask; You will likely need to use torch.softmax, torch.matmul, torch.Tensor.transpose in your implementation as well, so make sure you look up the definitions in the PyTorch documentation (via a Google Search); also, note that broadcasting in PyTorch works similarly to the behavior in numpy
-
-
-
+        B = self.B
+        dot_product = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.d_k)
+        if attention_mask is not None:
+            dot_product = dot_product.masked_fill(attention_mask.unsqueeze(1) == 1, min_val)
+        if key_padding_mask is not None:
+            dot_product = dot_product.masked_fill(key_padding_mask.unsqueeze(1).unsqueeze(2) == 1, min_val)
+        attention = torch.softmax(dot_product, dim=-1)
+        # B x num_heads x T_q x T_k
+        # B x num_heads x T_v x d_k
+        x = torch.matmul(attention, value)
+        # B x num_heads x T_q x d_k
+        x = x.transpose(1, 2)
 
 
         ##### YOUR CODE ENDS HERE #####
-
+        # B x T_q x num_heads x d_k
         x = x.contiguous().view(B, -1, self.num_heads * self.d_k) # (B, T_q, d_model)
 
         return x
@@ -104,8 +113,15 @@ class MultiHeadAttention(nn.Module):
 
         """
         ##### YOUR CODE STARTS HERE #####
-
-
+        self.B = Q.size(0)
+        B = self.B
+        q = self.W_q(Q)
+        k = self.W_k(K)
+        v = self.W_v(V)
+        q = q.contiguous().view(self.B, -1, self.num_heads, self.d_k).transpose(1, 2)
+        k = k.contiguous().view(self.B, -1, self.num_heads, self.d_k).transpose(1, 2)
+        v = v.contiguous().view(self.B, -1, self.num_heads, self.d_k).transpose(1, 2)
+        
 
 
         ##### YOUR CODE ENDS HERE #####

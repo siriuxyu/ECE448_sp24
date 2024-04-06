@@ -32,11 +32,40 @@ class PositionalEncoding(nn.Module):
         ## fill in the following code for positional encodings
         ## note that for better numerical accuracy, (1/10000) ^ (2i / d_model) = exp(2i * (-log(10000) /d_model))
 
-        ##### YOUR CODE STARTS HERE #####
-
-
-
-
+        # ##### YOUR CODE STARTS HERE #####
+        
+        for pos in range(max_seq_length):
+            for i in range(d_model//2):
+                pe[pos, 2*i] = math.sin(pos * math.exp(2*i * (-math.log(10000) / d_model)))
+                pe[pos, 2*i + 1] = math.cos(pos * math.exp(2*i * (-math.log(10000) / d_model)))
+        # if d_model % 2 == 0:
+        #     for i in range(d_model // 2):
+        #         div = math.exp(i * -math.log(10000) / d_model)
+        #         for pos in range(max_seq_length):
+        #             pe[pos, i] = math.sin(pos * div)
+        #             pe[pos, i + 1] = math.cos(pos * div)
+                    
+        # else:
+        #     for i in range(d_model // 2):
+        #         div = math.exp(i * -math.log(10000) / d_model)
+        #         for pos in range(max_seq_length):
+        #             pe[pos, i] = math.sin(pos * div)
+        #             pe[pos, i + 1] = math.cos(pos * div)
+                    
+                    
+        # if d_model % 2 == 0:
+        #     for i in range(d_model // 2):
+        #         div = torch.exp(i * -torch.log(10000) / d_model)
+        #         for pos in range(max_seq_length):
+        #             pe[pos, i] = torch.sin(pos * div)
+        #             pe[pos, i + 1] = torch.cos(pos * div)
+                
+        # else:
+        #     for i in range(d_model // 2):
+        #         div = torch.exp(i * -torch.log(10000) / d_model)
+        #         for pos in range(max_seq_length):
+        #             pe[pos, i] = torch.sin(pos * div)
+        #             pe[pos, i + 1] = torch.cos(pos * div)
 
         ##### YOUR CODE ENDS HERE #####
 
@@ -53,5 +82,7 @@ class PositionalEncoding(nn.Module):
 
         """
         ##### YOUR CODE STARTS HERE #####
+        x = x + self.pe[:, :x.size(1)]
+        return x
 
         ##### YOUR CODE ENDS HERE #####

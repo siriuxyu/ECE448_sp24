@@ -89,8 +89,12 @@ class TransformerEncoderLayer(nn.Module):
 
         ### Implement encoder self-attention, dropout, and then the Add & Norm opertion
         ##### YOUR CODE STARTS HERE #####
-
-
+        # position encoding
+        
+        # Apply self attention mechanism to x
+        x = self.self_attn(x, x, x, self_attn_padding_mask)
+        x = self.dropout(x)
+        x = self.self_attn_layer_norm(x + residual)
 
 
 
@@ -100,7 +104,14 @@ class TransformerEncoderLayer(nn.Module):
         #### YOUR CODE STARTS HERE #####
 
 
-
+        # Apply the first linear layer and the activation function
+        residual = x
+        x = self.fc1(x)
+        x = self.activation_fn(x)
+        x = self.fc2(x)
+        x = self.dropout(x)
+        x = self.final_layer_norm(x + residual)
+        
 
 
         ##### YOUR CODE ENDS HERE #####

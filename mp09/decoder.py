@@ -112,27 +112,33 @@ class TransformerDecoderLayer(nn.Module):
         """
         ## Implement decoder self-attention; dropout comes after self_attn
         ##### YOUR CODE STARTS HERE #####
-
-
-
+        residual = x
+        x = self.self_attn(x, x, x, self_attn_padding_mask, self_attn_mask)
+        x = self.dropout(x)
+        x = self.self_attn_layer_norm(x + residual)
+        
         ##### YOUR CODE ENDS HERE #####
 
         ## Implement encoder-decoder attention; dropout comes after encoder_attn
         if self.encoder_attn is not None:
-            pass ### REMOVE THIS AFTER YOU FINISHED THE CODE IN THIS IF STATEMENT!
+            ### REMOVE THIS AFTER YOU FINISHED THE CODE IN THIS IF STATEMENT!
             ##### YOUR CODE STARTS HERE #####
-
-
+            residual = x
+            x = self.encoder_attn(x, encoder_out, encoder_out, encoder_padding_mask)
+            x = self.dropout(x)
+            x = self.encoder_attn_layer_norm(x + residual)
 
              ##### YOUR CODE ENDS HERE #####
             
         ## Implement position-wise feed-forward network (hint: it should be the same as in the encoder layer)
         ##### YOUR CODE STARTS HERE #####
-
-
-
-
-
+        residual = x
+        x = self.fc1(x)
+        x = self.activation_fn(x)
+        x = self.fc2(x)
+        x = self.dropout(x)
+        x = self.final_layer_norm(x + residual)
+        
         ##### YOUR CODE ENDS HERE #####
         return x
     
