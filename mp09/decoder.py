@@ -195,7 +195,9 @@ class TransformerDecoderLayer(nn.Module):
             ##### YOUR CODE STARTS HERE #####
             ## Hint: For the , you need to slice it so that it only has the last time step in the time dimension
             ## You also need to adjust the masks accordingly
- 
+            ag_x = torch.cat([cache, x], dim=1)
+            ag_self_attn_mask = self_attn_mask
+            ag_self_attn_padding_mask = self_attn_padding_mask
 
 
 
