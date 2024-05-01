@@ -22,9 +22,18 @@ def get_returns(rollout_buffer: utils.RolloutBuffer, discount_factor=0.95):
             torch.Tensor[torch.float32], timesteps x 1
                 Returns for the entire set of rollouts
     """
-    # YOUR CODE HERE
-    raise NotImplementedError()
-
+    returns = []
+    R = 0
+    for reward, terminated in zip(reversed(rollout_buffer.rewards), reversed(rollout_buffer.terminateds)):
+        if terminated:
+            R = reward
+        else:
+            R = reward + discount_factor * R
+        returns.insert(0, R)
+    returns = torch.tensor(returns).unsqueeze(1)
+    
+    return returns
+    
 def get_advantages(value_net: nn.Module,
                    observations: torch.Tensor,
                    returns: torch.Tensor):
@@ -45,7 +54,17 @@ def get_advantages(value_net: nn.Module,
     # You should calculate the advantage, then standardize it (subtract out mean, then divide by standard deviation
     # plus epsilon.) Use 1e-10 for epsilon (defined as EPSILON at top of file). Epsilon is solely there to prevent
     # divide-by-zero errors.
-    raise NotImplementedError()
+    with torch.no_grad():
+        value_estimates = value_net(observations)
+    advantages = returns - value_estimates
+    
+    mean_adv = advantages.mean()
+    std_adv = advantages.std()
+
+    std_advantages = (advantages - mean_adv) / (std_adv + EPSILON)
+    return std_advantages
+
+
 
 def get_value_net_loss(value_net: nn.Module,
                        observation: Tensor,
@@ -64,7 +83,11 @@ def get_value_net_loss(value_net: nn.Module,
                 Value network loss for the given returns
     """
     # YOUR CODE HERE
-    raise NotImplementedError()
+    predicted_returns = value_net(observation)
+    loss = torch.mean((predicted_returns - returns) ** 2)
+    # loss = nn.functional.mse_loss(predicted_returns, returns)
+    
+    return loss
 
 def get_vanilla_policy_gradient_loss(policy: nn.Module,
                                 observation: Tensor,
@@ -86,7 +109,15 @@ def get_vanilla_policy_gradient_loss(policy: nn.Module,
                 Vanilla policy gradient loss for the given return or advantage
     """
     # YOUR CODE HERE
-    raise NotImplementedError()
+    logits = policy(observation)
+    
+    log_probs = torch.gather(logits, 1, action)
+
+    policy_gradient_terms = log_probs * return_or_advantage
+    
+    loss = -torch.mean(policy_gradient_terms)
+    
+    return loss
 
 def collect_rollouts(env: utils.EnvInterface,
                      policy: nn.Module,
@@ -115,8 +146,18 @@ def collect_rollouts(env: utils.EnvInterface,
             # 5) Think about what the observation should be for the next step.
             # Note: final_reward_mean is not required for grading, but not having breaks the notebook. Variable reward
             # should be the last reward of the rollout for it to work.
-            raise NotImplementedError()
-            # END YOUR CODE
+            with torch.no_grad():
+                logits = policy(obs)
+            
+            action = utils.distribution_sample(logits, seed=seed)
+            
+            next_obs, terminated, reward = env.step(action)
+            
+            rollout_buffer.add(action=action, logits=logits, observation=obs, terminated=terminated, reward=reward)
+            
+            obs = next_obs
+            
+            # END YOUR CODE 
         final_reward_mean.append(reward)
     policy.train() # Put the policy back in train mode
     rollout_buffer.finalize()
@@ -203,16 +244,15 @@ def train_policy_gradient(env: utils.EnvInterface,
                 # Everything should be a torch tensor, as specified by the inputs to get_PPO_policy_gradient_loss and
                 # get_vanilla_policy_gradient_loss
 
-                raise NotImplementedError()
                 policy_gradient_kwargs = dict(
-                    policy=                 None, # Fill in 
-                    value_net=              None, # Fill in
-                    critic=                 None, # Fill in
-                    observation=            None, # Fill in
-                    old_logits=             None, # Fill in
-                    action=                 None, # Fill in
-                    return_or_advantage=    None, # Fill in
-                    returns=                None, # Fill in 
+                    policy=                 policy, # Fill in 
+                    value_net=              value_net, # Fill in
+                    critic=                 value_net, # Fill in
+                    observation=            rollout_buffer.observations[batch_start:batch_stop], # Fill in
+                    old_logits=             rollout_buffer.old_logits[batch_start:batch_stop], # Fill in
+                    action=                 rollout_buffer.actions[batch_start:batch_stop], # Fill in
+                    return_or_advantage=    advantages[batch_start:batch_stop] if get_advantages else returns[batch_start:batch_stop], # Fill in
+                    returns=                returns[batch_start:batch_stop], # Fill in 
                     ppo_clip=               ppo_clip
                 )
 
@@ -253,4 +293,21 @@ def get_PPO_policy_gradient_loss (policy: nn.Module,
                 PPO clipping epsilon on the probability ratio
     """
     # YOUR CODE HERE
-    raise NotImplementedError()
+    new_logits = policy(observation)
+
+    new_probs = torch.nn.functional.softmax(new_logits, dim=-1)
+    old_probs = torch.nn.functional.softmax(old_logits, dim=-1)
+
+    new_probs_gathered = new_probs.gather(1, action)
+    old_probs_gathered = old_probs.gather(1, action)
+
+    probs_ratio = new_probs_gathered / old_probs_gathered
+
+    clipped_probs_ratio = torch.clamp(probs_ratio, 1-ppo_clip, 1+ppo_clip)
+
+    unclipped_objective = probs_ratio * return_or_advantage
+    clipped_objective = clipped_probs_ratio * return_or_advantage
+
+    ppo_objective = -torch.min(unclipped_objective, clipped_objective).mean()
+
+    return ppo_objective
